@@ -71,20 +71,19 @@ def main():
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CallbackQueryHandler(button_callback))
 
-    # Настраиваем планировщик
+# Настраиваем планировщик
     scheduler = AsyncIOScheduler(timezone=MOSCOW_TZ)
     # Напоминания в 6:30, 17:30, 21:30 по МСК
-    for hour, minute in [(6, 30), (17, 30), (21, 30)]:
-        scheduler.add_job(
-            send_reminder,
-            trigger=CronTrigger(hour=hour, minute=minute, timezone=MOSCOW_TZ),
-            args=[app]
-        )
-    # Сброс статуса каждый день в 00:00 по МСК
-    scheduler.add_job(
+scheduler.add_job(
     send_reminder,
     trigger=CronTrigger(hour=datetime.now(MOSCOW_TZ).hour, minute=datetime.now(MOSCOW_TZ).minute + 1, timezone=MOSCOW_TZ),
     args=[app]
+)
+    # Сброс статуса каждый день в 00:00 по МСК
+    scheduler.add_job(
+        reset_status,
+        trigger=CronTrigger(hour=0, minute=0, timezone=MOSCOW_TZ),
+        args=[app]
     )
     scheduler.start()
 
@@ -94,3 +93,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
