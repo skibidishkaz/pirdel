@@ -6,25 +6,21 @@ import os
 from datetime import datetime
 import pytz
 
-# Токен из переменной окружения
+# Токен и настройки
 TOKEN = os.getenv("TELEGRAM_TOKEN")
-# Словарь для отслеживания, принял ли пользователь таблетки
 USER_STATUS = {}  # {chat_id: has_taken_pills_today}
-
-# Часовой пояс Москвы
 MOSCOW_TZ = pytz.timezone("Europe/Moscow")
 
 # Обработчик команды /start
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_id = update.message.chat_id
-    USER_STATUS[chat_id] = False  # Инициализируем статус: таблетки не приняты
+    USER_STATUS[chat_id] = False
     context.bot_data["chat_id"] = chat_id
     await update.message.reply_text(
-        "Привет! Я буду напоминать тебе про таблетки в 6:30, 17:30 и 21:30 по МСК. "
-        "Нажми '✅Да, выпила', когда примешь таблетки, чтобы я не напоминал до завтра."
+        "Привет! Я буду напоминать тебе про таблетки. Нажми '✅Да, выпила', когда примешь таблетки."
     )
 
-# Функция для создания клавиатуры с кнопкой
+# Клавиатура с кнопкой
 def get_keyboard():
     keyboard = [[InlineKeyboardButton("✅Да, выпила", callback_data="took_pills")]]
     return InlineKeyboardMarkup(keyboard)
@@ -35,12 +31,8 @@ async def send_reminder(context: ContextTypes.DEFAULT_TYPE):
     if not chat_id:
         print("Chat ID не установлен")
         return
-
-    # Проверяем, принял ли пользователь таблетки
     if USER_STATUS.get(chat_id, False):
-        return  # Если таблетки приняты, не отправляем напоминание
-
-    # Отправляем напоминание с кнопкой
+        return
     await context.bot.send_message(
         chat_id=chat_id,
         text="Привет, ты выпила таблетки?",
@@ -50,17 +42,16 @@ async def send_reminder(context: ContextTypes.DEFAULT_TYPE):
 # Обработчик нажатия на кнопку
 async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
-    await query.answer()  # Подтверждаем нажатие кнопки
-
+    await query.answer()
     chat_id = query.message.chat_id
     if query.data == "took_pills":
-        USER_STATUS[chat_id] = True  # Отмечаем, что таблетки приняты
+        USER_STATUS[chat_id] = True
         await query.message.reply_text("Отлично, ты выпила таблетки! Напомню завтра.")
 
-# Функция для сброса статуса каждый день
+# Сброс статуса каждый день
 async def reset_status(context: ContextTypes.DEFAULT_TYPE):
     for chat_id in USER_STATUS:
-        USER_STATUS[chat_id] = False  # Сбрасываем статус для всех пользователей
+        USER_STATUS[chat_id] = False
     print("Статусы пользователей сброшены")
 
 def main():
@@ -71,15 +62,13 @@ def main():
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CallbackQueryHandler(button_callback))
 
-# Настраиваем планировщик
+    # Настраиваем планировщик
     scheduler = AsyncIOScheduler(timezone=MOSCOW_TZ)
-    # Напоминания в 6:30, 17:30, 21:30 по МСК
     scheduler.add_job(
-    send_reminder,
-    trigger=CronTrigger(hour=datetime.now(MOSCOW_TZ).hour, minute=datetime.now(MOSCOW_TZ).minute + 1, timezone=MOSCOW_TZ),
-    args=[app]
-)
-    # Сброс статуса каждый день в 00:00 по МСК
+        send_reminder,
+        trigger=CronTrigger(minute="*", second="0", timezone=MOSCOW_TZ),  # Каждую минуту для теста
+        args=[app]
+    )
     scheduler.add_job(
         reset_status,
         trigger=CronTrigger(hour=0, minute=0, timezone=MOSCOW_TZ),
@@ -93,5 +82,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
