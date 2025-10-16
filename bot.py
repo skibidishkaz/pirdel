@@ -74,7 +74,7 @@ def main():
 # Настраиваем планировщик
     scheduler = AsyncIOScheduler(timezone=MOSCOW_TZ)
     # Напоминания в 6:30, 17:30, 21:30 по МСК
-scheduler.add_job(
+    scheduler.add_job(
     send_reminder,
     trigger=CronTrigger(hour=datetime.now(MOSCOW_TZ).hour, minute=datetime.now(MOSCOW_TZ).minute + 1, timezone=MOSCOW_TZ),
     args=[app]
@@ -93,4 +93,5 @@ scheduler.add_job(
 
 if __name__ == "__main__":
     main()
+
 
