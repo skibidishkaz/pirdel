@@ -82,9 +82,9 @@ def main():
         )
     # Сброс статуса каждый день в 00:00 по МСК
     scheduler.add_job(
-        reset_status,
-        trigger=CronTrigger(hour=0, minute=0, timezone=MOSCOW_TZ),
-        args=[app]
+    send_reminder,
+    trigger=CronTrigger(hour=datetime.now(MOSCOW_TZ).hour, minute=datetime.now(MOSCOW_TZ).minute + 1, timezone=MOSCOW_TZ),
+    args=[app]
     )
     scheduler.start()
 
